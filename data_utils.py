@@ -962,12 +962,28 @@ class DiscogemProcessor(DataProcessor):
                 arg1 = p[-2]
                 arg2 = p[-1]
                 sense = literal_eval(p[0])[1]
-                label = self.get_label_id(sense)
+                #label = self.get_label_id(sense)
                 
                 text_a = post_process_arg1(arg1)
                 text_b = post_process_arg2(arg2)
 
+                label = None
                 multi_label = [0] * num_labels
+
+                #for sense in example_json["Sense"]:
+                #    lbl = self.get_label_id(sense)
+                #    if lbl is not None:
+                #        multi_label[lbl] = 1
+                #        if label is None:
+                #            label = lbl
+                lbl = self.get_label_id(sense)
+                if lbl is not None:
+                    multi_label[lbl] = 1
+                    if label is None:
+                        label = lbl
+                if label is None:
+                    continue
+
                 meta = {
                     "conn1": "",
                     "conn2": "",
