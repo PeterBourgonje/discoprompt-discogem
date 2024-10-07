@@ -1,0 +1,1 @@
+export CUDA_VISIBLE_DEVICES=3 && nohup python3 DiscoPrompt.py --dataset discogem --model_name_or_path google-t5/t5-base --template_file DiscoPropmt_template.txt 2> nohup.out &

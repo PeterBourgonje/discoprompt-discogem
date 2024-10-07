@@ -86,7 +86,12 @@ def get_4class_labels(moreclass_labels, num_classes = 11):
             if isinstance(label, list):
                 class4_labels.append([mapping_4class_to_15class(each_multi_label)for each_multi_label in label])
             else:
-                class4_labels.append(mapping_4class_to_15class(label))  
+                class4_labels.append(mapping_4class_to_15class(label))
+        elif num_classes == 12:
+            if isinstance(label, list):
+                class4_labels.append([mapping_4class_to_12class(each_multi_label) for each_multi_label in label])
+            else:
+                class4_labels.append(mapping_4class_to_12class(label))
     return class4_labels
 
 
@@ -129,6 +134,17 @@ def mapping_4class_to_15class(label):
         class4_label = int(3)
     elif label > 13:
         class4_label = int(4)
+    return class4_label
+# discogem 12 labels
+def mapping_4class_to_12class(label):
+    if label < 3:
+        class4_label = int(0)
+    elif label > 2 and label < 5:
+        class4_label = int(1)
+    elif label > 4 and label < 10:
+        class4_label = int(2)
+    elif label > 9:
+        class4_label = int(3)
     return class4_label
 
 def processing_output_multilabel(predictions,ground_truths):

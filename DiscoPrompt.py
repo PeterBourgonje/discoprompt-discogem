@@ -23,7 +23,7 @@ from openprompt.plms import load_plm
 from transformers import AdamW, get_linear_schedule_with_warmup,get_constant_schedule_with_warmup
 from transformers.optimization import Adafactor, AdafactorSchedule  # use Adafactor is the default setting for T5
 
-from data_utils import PDTB2Processor, PDTB3Processor, CoNLL15Processor
+from data_utils import PDTB2Processor, PDTB3Processor, CoNLL15Processor, DiscogemProcessor
 from utils import evaluate
 from openprompt.prompts import PTRTemplate
 from discoverbalizer import DiscoVerbalizer
@@ -337,6 +337,30 @@ elif args.dataset == "pdtb3":
     "Temporal.Synchronous"     :["meanwhile", "Temporal", "Synchronous"],
     }
 
+elif args.dataset == "discogem":
+    num_classes = 12
+    Processor = DiscogemProcessor(num_labels=num_classes)
+    data_dir = '/nethome/peterb/DiscoGeM/custom_golf_format'
+    dataset = {}
+    dataset['train'] = Processor.get_examples(data_dir, 'train')
+    dataset['validation'] = Processor.get_examples(data_dir, 'dev')
+    dataset['test'] = Processor.get_examples(data_dir, 'test')
+    class_labels = Processor.get_labels()
+    label_words = {
+        "Comparison.Concession": ['although', 'Comparison', 'Concession'],
+        "Comparison.Contrast": ['in contrast', 'Comparison', 'Contrast'],
+        "Comparison.Similarity": ['similarly', 'Comparison', 'Similarity'],
+        "Contingency.Cause": ['because', 'Contingency', 'Cause'],
+        "Contingency.Purpose": ['in order', 'Contingency', 'Purpose'],
+        "Expansion.Conjunction": ['also', 'Expansion', 'Conjunction'],
+        "Expansion.Disjunction": ['alternatively', 'Expansion', 'Disjunction'],
+        "Expansion.Instantiation": ['for example', 'Expansion', 'Instantiation'],
+        "Expansion.Level-of-detail": ['specifically', 'Expansion', 'Level'],
+        "Expansion.Substitution": ['instead', 'Expansion', 'Substitution'],
+        "Temporal.Asynchronous": ['then', 'Temporal', 'Asynchronous'],
+        "Temporal.Synchronous": ['meanwhile', 'Temporal', 'Synchronous'],
+    }
+    
 else:
     raise NotImplementedError    
 
@@ -550,9 +574,9 @@ print("11class-Accuracy oriented Performance")
 prompt_model.load_state_dict(torch.load(f"{project_root}/ckpts/{this_run_unicode}.ckpt"))
 prompt_model = prompt_model.cuda()#.half()
 
-fianl_test_acc, final_test_F1_score, final_test_Acc_4class, final_test_F1_score_4class = evaluate(prompt_model, test_dataloader, dataset['test'], Processor, use_cuda, num_classes, test = True)
+final_test_acc, final_test_F1_score, final_test_Acc_4class, final_test_F1_score_4class = evaluate(prompt_model, test_dataloader, dataset['test'], Processor, use_cuda, num_classes, test = True)
 print("11Class - Testing Accuacry")
-print(fianl_test_acc)
+print(final_test_acc)
 print("11Class - Testing F1 score")
 print(final_test_F1_score)
 print("4Class - Testing Accuacry")

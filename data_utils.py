@@ -1,7 +1,7 @@
 """
 This file contains the logic for loading data for all RelationClassification tasks.
 """
-
+from ast import literal_eval
 import csv
 import json
 import os
@@ -894,3 +894,94 @@ class CoNLL15Processor_ent(DataProcessor):
         return examples
 
 PROCESSORS = {"pdtb2": PDTB2Processor, "pdtb2_exp":PDTB2EXPProcessor, "pdtb3": PDTB3Processor, "conll15": CoNLL15Processor, "conll15-ent":CoNLL15Processor_ent}
+
+class DiscogemProcessor(DataProcessor):
+
+    rel_map_4 = {
+        "Comparison.Concession": 0,
+        "Comparison.Contrast": 0,
+        "Comparison.Similarity": 0,
+        "Contingency.Cause": 1,
+        "Contingency.Purpose": 1,
+        "Expansion.Conjunction": 2,
+        "Expansion.Disjunction": 2,
+        "Expansion.Instantiation": 2,
+        "Expansion.Level-of-detail": 2,
+        "Expansion.Substitution": 2,
+        "Temporal.Asynchronous": 3,
+        "Temporal.Synchronous": 3,
+    }
+    rels_5 = ["Comparison", "Contingency", "Expansion", "Temporal"]
+
+    rel_map_12 = {
+        "Comparison.Concession": 0,
+        "Comparison.Contrast": 1,
+        "Comparison.Similarity": 2,
+        "Contingency.Cause": 3,
+        "Contingency.Purpose": 4,
+        "Expansion.Conjunction": 5,
+        "Expansion.Disjunction": 6,
+        "Expansion.Instantiation": 7,
+        "Expansion.Level-of-detail": 8,
+        "Expansion.Substitution": 9,
+        "Temporal.Asynchronous": 10,
+        "Temporal.Synchronous": 11,
+    }
+    rels_12 = list(rel_map_12.keys())
+
+
+    def __init__(self, num_labels=12):
+        super().__init__()
+        if num_labels == 4:
+            self._labels = DiscogemProcessor.rels_4
+            self._label_mapping = DiscogemProcessor_ent.rel_map_4
+        elif num_labels == 12:
+            self._labels = DiscogemProcessor.rels_12
+            self._label_mapping = DiscogemProcessor.rel_map_12
+        else:
+            raise NotImplementedError
+
+    def get_label_id(self, label) -> int:
+        """get label id of the corresponding label
+
+        Args:
+            label: label in dataset
+
+        Returns:
+            int: the index of label
+        """
+        return self.label_mapping.get(label, None)
+
+    def get_examples(self, data_dir, split):
+        path = os.path.join(data_dir, "{}.txt".format(split))
+        examples = []
+        num_labels = self.get_num_labels()
+        with open(path, encoding='utf8') as f:
+            for choicex, line in enumerate(f):
+                p = [x.strip() for x in line.split('|||')]
+                arg1 = p[-2]
+                arg2 = p[-1]
+                sense = literal_eval(p[0])[1]
+                label = self.get_label_id(sense)
+                
+                text_a = post_process_arg1(arg1)
+                text_b = post_process_arg2(arg2)
+
+                multi_label = [0] * num_labels
+                meta = {
+                    "conn1": "",
+                    "conn2": "",
+                    "conn1_senses": "",
+                    "conn2_senses": [],
+                    "multi_label": multi_label
+                }
+                while len(meta["conn1_senses"]) and meta["conn1_senses"][-1] == "":
+                    meta["conn1_senses"].pop()
+
+                guid = "%d_%s" % (choicex, 'Implicit')
+                example = InputExample(guid=guid, text_a=text_a, text_b=text_b, meta=meta, label=label)#, multi_label=multi_label)
+                examples.append(example)
+        return examples
+
+PROCESSORS = {"pdtb2": PDTB2Processor, "pdtb2_exp":PDTB2EXPProcessor, "pdtb3": PDTB3Processor, "conll15": CoNLL15Processor, "conll15-ent":CoNLL15Processor_ent, "discogem": DiscogemProcessor}
+
