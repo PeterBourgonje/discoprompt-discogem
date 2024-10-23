@@ -999,5 +999,103 @@ class DiscogemProcessor(DataProcessor):
                 examples.append(example)
         return examples
 
-PROCESSORS = {"pdtb2": PDTB2Processor, "pdtb2_exp":PDTB2EXPProcessor, "pdtb3": PDTB3Processor, "conll15": CoNLL15Processor, "conll15-ent":CoNLL15Processor_ent, "discogem": DiscogemProcessor}
+class DiscogemMultilabelProcessor(DataProcessor):
+
+    rel_map_4 = {
+        "Contingency.Cause": 0,
+        "Expansion.Conjunction": 1,
+        "Expansion.Level-of-detail": 1,
+        "Temporal.Asynchronous": 2,
+        "Comparison.Concession": 3,
+        "Temporal.Synchronous": 2,
+        "Comparison.Contrast": 3,
+        "Comparison.Similarity": 3,
+        "Expansion.Equivalence": 1,
+        "Expansion.Instantiation": 1,
+        "Expansion.Substitution": 1,
+        "Contingency.Purpose": 0,
+        "Expansion.Manner": 1,
+        "Expansion.Disjunction": 1,
+        "Contingency.Negative-Condition": 0,
+        "Contingency.Condition": 0,
+        "Expansion.Exception": 1
+        
+    }
+    rels_4 = ["Comparison", "Contingency", "Expansion", "Temporal"]
+
+    rel_map_17 = {
+        "Contingency.Cause": 0,
+        "Expansion.Conjunction": 1,
+        "Expansion.Level-of-detail": 2,
+        "Temporal.Asynchronous": 3,
+        "Comparison.Concession": 4,
+        "Temporal.Synchronous": 5,
+        "Comparison.Contrast": 6,
+        "Comparison.Similarity": 7,
+        "Expansion.Equivalence": 8,
+        "Expansion.Instantiation": 9,
+        "Expansion.Substitution": 10,
+        "Contingency.Purpose": 11,
+        "Expansion.Manner": 12,
+        "Expansion.Disjunction": 13,
+        "Contingency.Negative-Condition": 14,
+        "Contingency.Condition": 15,
+        "Expansion.Exception": 16
+    }
+    rels_17 = list(rel_map_17.keys())
+
+
+    def __init__(self, num_labels=17):
+        super().__init__()
+        if num_labels == 4:
+            self._labels = DiscogemMultilabelProcessor.rels_4
+            self._label_mapping = DiscogemMultilabelProcessor_ent.rel_map_4
+        elif num_labels == 17:
+            self._labels = DiscogemMultilabelProcessor.rels_17
+            self._label_mapping = DiscogemMultilabelProcessor.rel_map_17
+        else:
+            raise NotImplementedError
+
+    def get_label_id(self, label) -> int:
+        """get label id of the corresponding label
+
+        Args:
+            label: label in dataset
+
+        Returns:
+            int: the index of label
+        """
+        return self.label_mapping.get(label, None)
+
+    def get_examples(self, data_dir, split):
+        path = os.path.join(data_dir, "{}.csv".format(split))
+        examples = []
+        num_labels = self.get_num_labels()
+        for i, row in enumerate(csv.DictReader(open(path, encoding='utf8'))):
+            arg1 = row['arg1']
+            arg2 = row['arg2']
+            senses = row['labels']
+            text_a = post_process_arg1(arg1)
+            text_b = post_process_arg2(arg2)
+            multi_label = [0] * num_labels
+            for s in senses.split(';'):
+                multi_label[self._label_mapping[s]] = 1
+            
+            meta = {
+                "conn1": "",
+                "conn2": "",
+                "conn1_senses": "",
+                "conn2_senses": [],
+                "multi_label": multi_label
+            }
+            while len(meta["conn1_senses"]) and meta["conn1_senses"][-1] == "":
+                meta["conn1_senses"].pop()
+
+            guid = "%d_%s" % (i, 'Implicit')
+            example = InputExample(guid=guid, text_a=text_a, text_b=text_b, meta=meta, label=multi_label)
+            examples.append(example)
+        return examples
+
+    
+PROCESSORS = {"pdtb2": PDTB2Processor, "pdtb2_exp":PDTB2EXPProcessor, "pdtb3": PDTB3Processor, "conll15": CoNLL15Processor, "conll15-ent":CoNLL15Processor_ent, "discogem": DiscogemProcessor, "discogemmultilabel": DiscogemMultilabelProcessor}
 

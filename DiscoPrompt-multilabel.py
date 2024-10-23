@@ -508,7 +508,8 @@ for epoch in range(1000000):
 
         # For Classification Param
         logits, _, each_logits = prompt_model(inputs) 
-        labels = inputs['label']   
+        labels = inputs['label']
+        print('deb labels:', labels)
         loss = loss_func(logits, labels)
         loss.backward()
         tot_loss += loss.item()
